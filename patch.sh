@@ -5,9 +5,14 @@ if [ -d "_patched" ]; then
   rm -rf _patched
 fi
 
-git submodule update --init
-
-cd ansible || return 1
+if [ -d "ansible" ]; then
+  cd ansible || return 1
+  git pull
+else
+  git clone git://github.com/ansible/ansible.git
+  #git submodule update --init
+  cd ansible || return 1
+fi
 
 git checkout-index -a -f --prefix=../_patched/
 

@@ -3,7 +3,7 @@ ansible-patches
 
 ###Run
 
-`./patch`
+`./patch.sh`
 
 Fetch the latest ansible code, then apply the patches.
 

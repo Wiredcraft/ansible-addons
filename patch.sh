@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
 
+echo ""
+
 #
 if [ -d "_patched" ]; then
   rm -rf _patched

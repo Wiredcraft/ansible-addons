@@ -5,6 +5,8 @@ if [ -d "_patched" ]; then
   rm -rf _patched
 fi
 
+echo "Clonging/Updaging ansible...\n"
+
 if [ -d "ansible" ]; then
   cd ansible || return 1
   git pull
@@ -14,8 +16,8 @@ else
   cd ansible || return 1
 fi
 
+echo "Patching..."
 git checkout-index -a -f --prefix=../_patched/
-
 cd ../_patched || return 1
 
 for p in $(find ../*.patch)

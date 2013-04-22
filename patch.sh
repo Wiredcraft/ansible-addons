@@ -5,8 +5,7 @@ if [ -d "_patched" ]; then
   rm -rf _patched
 fi
 
-echo "Clonging/Updaging ansible...\n"
-
+echo "Clonging/Updaging ansible..."
 if [ -d "ansible" ]; then
   cd ansible || return 1
   git pull
@@ -15,6 +14,8 @@ else
   #git submodule update --init
   cd ansible || return 1
 fi
+
+echo ""
 
 echo "Patching..."
 git checkout-index -a -f --prefix=../_patched/

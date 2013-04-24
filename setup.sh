@@ -14,7 +14,7 @@ else
     fi
 fi
 
-for folder in $(ls -d */.)
+for folder in $(ls -d */. | grep -v patches)
 do
     echo "Copying files in $folder to Ansible source"
     find "$folder" -type f -exec sudo cp --parents '{}' "$ANSIBLE_ROOT"/. \;

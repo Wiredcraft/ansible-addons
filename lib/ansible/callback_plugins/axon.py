@@ -12,11 +12,13 @@ try:
 except ImportError:
     print "try 'pip install axon' to install the axon package"
 
+AXON_HOST = '127.0.0.1'
+AXON_PORT = 7777
 sock = axon.Axon()
 
 def record(result):
     result['space'] = os.environ.get('ANSIBLE_DEVOPS_SPACE', '')
-    sock.connect(('127.0.0.1', 7777))
+    sock.connect((AXON_HOST, AXON_PORT))
     sock.push('log', result)
 
 class CallbackModule(object):

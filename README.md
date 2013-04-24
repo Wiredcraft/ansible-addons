@@ -1,10 +1,14 @@
-ansible-patches
-===============
+# Ansible-addons
 
-###Run
+Holds all the custom code maintained by the devo.ps team that is not part
+of the [ansible]() core, either because PR are not accepted or features are
+not meant to be shared.
 
-`./patch.sh`
+Run ```install.sh``` to install.
 
-Fetch the latest ansible code, then apply the patches.
+## Requirements
 
-If all thing goes well, you will got the result in `_patched` foler.
+- Ansible source code on the platform,
+- GNU cp (uses --parents option)
+- sudo enabled user (will install ansible)
+

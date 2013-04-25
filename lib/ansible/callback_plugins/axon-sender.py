@@ -2,6 +2,7 @@
 # coding:utf-8
 
 import os
+import sys
 try:
     import json
 except ImportError: 
@@ -9,18 +10,23 @@ except ImportError:
 
 try:
     import axon
-    def record(result):
-        sock = axon.Axon()
-        result['space'] = os.environ.get('ANSIBLE_DEVOPS_SPACE', '')
-        sock.connect((AXON_HOST, AXON_PORT))
-        sock.push('log', result)
 except ImportError:
     print "try 'pip install axon' to install the axon package"
-    def record(result):
-        pass
 
 AXON_HOST = '127.0.0.1'
 AXON_PORT = 7777
+
+def record(result):
+    if 'axon' in sys.modules:
+        sock = axon.Axon()
+        result['space'] = os.environ.get('ANSIBLE_DEVOPS_SPACE', '')
+        try: 
+            sock.connect((AXON_HOST, AXON_PORT))
+            sock.push('log', result)
+        except Exception, e: 
+            # send to logs
+            print "Error; playbook callback can not send Axon message - %s" % e
+            pass
 
 class CallbackModule(object):
 

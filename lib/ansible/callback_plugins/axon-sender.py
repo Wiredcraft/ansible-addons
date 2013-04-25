@@ -14,7 +14,7 @@ except ImportError:
     print "try 'pip install axon' to install the axon package"
 
 AXON_HOST = '127.0.0.1'
-AXON_PORT = 7777
+AXON_PORT = 3001
 
 def record(result):
     if 'axon' in sys.modules:

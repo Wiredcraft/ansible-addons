@@ -65,10 +65,21 @@ if len(sys.argv) == 2 and (sys.argv[1] == '--list') and isinstance(space, str):
 
     # query api
     groups_io = opener.open(url_ansible +"?space="+ space)
-    groups = json.load(groups_io);
+    data = groups_io.read()
+    code = groups_io.getcode()
 
-    print json.dumps(groups)
-    sys.exit(0)
+    if code == 500:
+        sys.stderr.write(data)
+        sys.exit(1)
+
+    try:
+        # Only used to ensure we have a valid JSON file
+        groups = json.loads(data);
+        sys.stdout.write(json.dumps(groups))
+        sys.exit(0)
+    except ValueError:
+        sys.stderr.write(data)
+        sys.exit(1)
 
 #####################################################
 # executed with a hostname as a parameter, return the

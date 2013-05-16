@@ -16,6 +16,11 @@ except ImportError:
 AXON_HOST = '127.0.0.1'
 AXON_PORT = 3001
 
+LVL_NOTI = 'notification'
+LVL_WARN = 'warning'
+LVL_ERR = 'error'
+LVL_INFO = 'information'
+
 def record(result):
     if 'axon' in sys.modules:
         sock = axon.Axon()
@@ -34,29 +39,29 @@ class CallbackModule(object):
         pass
 
     def playbook_on_start(self):
-        record({'type': 'Notifications', 'message': 'Start playbook'})
+        record({'type': LVL_NOTI, 'message': 'Start playbook'})
 
     def runner_on_failed(self, host, res, ignore_errors=False):
         if ignore_errors:
             return
-        record({'type': 'Errors', 'source': host, 'message': res})
+        record({'type': LVL_ERR, 'source': host, 'message': res})
 
     def runner_on_ok(self, host, res):
-        record({'type': 'Notifications', 'source': host, 'message': res})
+        record({'type': LVL_NOTI, 'source': host, 'message': res})
 
     def runner_on_error(self, host, msg):
-        record({'type': 'Errors', 'source': host, 'message': msg})
+        record({'type': LVL_ERR, 'source': host, 'message': msg})
 
     def runner_on_skipped(self, host, item=None):
-        record({'type': 'Notifications', 'source': host, 'item': item})
+        record({'type': LVL_NOTI, 'source': host, 'message': item})
 
     def runner_on_unreachable(self, host, res):
-        record({'type': 'Errors', 'source': host, 'message': res})
+        record({'type': LVL_ERR, 'source': host, 'message': res})
 
     def playbook_on_stats(self, stats):
         result = {}
         for host in stats.processed:
-            record({'type':'Notifications', 'source': host, 'message': json.dumps(stats.summarize(host))})
+            record({'type': LVL_NOTI, 'source': host, 'message': stats.summarize(host)})
             # result[host] = stats.summarize(host)
 
     # def runner_on_no_hosts(self):

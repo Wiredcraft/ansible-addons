@@ -1,0 +1,161 @@
+#!/usr/bin/python
+# -*- coding: utf-8 -*-
+from ansible.utils import default
+
+# (c) 2012, Mark Theunissen <mark.theunissen@gmail.com>
+# Sponsored by Four Kitchens http://fourkitchens.com.
+#
+# This file is part of Ansible
+#
+# Ansible is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# Ansible is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with Ansible.  If not, see <http://www.gnu.org/licenses/>.
+
+DOCUMENTATION = '''
+---
+module: etcd
+short_description: Read and write values from etcd server.
+description:
+   - Read and write values from etcd server.
+version_added: "0.1"
+options:
+  command:
+    description:
+      - Etcd command (either get or ensure).
+    required: true
+    default: None
+  target_host:
+    description:
+      - IP address or hostname of the server to read data from
+    required: true
+    default: null
+  target_port:
+    description:
+      - Port of the server to read data from
+    required: false
+    default: 4001
+  key:
+    description:
+      - The etcd key (aka path) to a variable.
+    required: true
+    default: null
+  value:
+    description:
+      - The value of the target etcd item (used with set command).
+    required: true
+    default: null
+
+  ssl_cert:
+    description:
+      - The ssl_cert file
+    required: false
+    default: null
+  ssl_key:
+    description:
+      - The ssl_cert file
+    required: false
+    default: null
+
+notes:
+   - Requires the requests and etcd-py Python packages on the remote host.
+     For Ubuntu, install requests with pip install requests. (See M(apt).)
+requirements: [ ]
+author: Juha Suomalainen
+'''
+
+EXAMPLES = '''
+# Fetch value for key /test from etcd server on 192.168.1.111
+- etcd: ip=192.168.1.111 state=present
+'''
+
+try:
+    import etcd
+    etcd_found = True
+except ImportError:
+    etcd_found = False
+
+try:
+    import requests
+    requests_found = True
+except ImportError:
+    requests_found = False
+
+
+# ===========================================
+# Module specific support methods.
+#
+
+
+# ===========================================
+# Module execution.
+#
+
+def main():
+    module = AnsibleModule(argument_spec = dict(command= dict(required= True, choices= ['ensure', 'get']),
+                                                target_host=dict(required= True),
+                                                target_port=dict(default= 4001),
+                                                key= dict(required= True),
+                                                value= dict(required= False, default=None),
+                                                ssl_cert= dict(required= False, default= None),
+                                                ssl_key= dict(required= False, default= None),
+                                                )
+                           )
+
+    if not etcd_found:
+        module.fail_json(msg="the python etcd module is required")
+
+    if not requests_found:
+        module.fail_json(msg="the python requests module is required")
+
+    command = module.params['command']
+    target_host = module.params['target_host']
+    target_port = module.params['target_port']
+    key = module.params['key']
+    value = module.params['value']
+    ssl_cert = module.params['ssl_cert']
+    ssl_key = module.params['ssl_key']
+
+    kwargs = {'host': target_host,
+            'port': target_port}
+    if ssl_cert:
+        kwargs['ssl_cert'] = ssl_cert
+    if ssl_key:
+        kwargs['ssl_key'] = ssl_key
+
+    e = etcd.Etcd(**kwargs)
+    change = False
+    if command == 'get':
+        try:
+            value = e.get(key).value
+        except requests.ConnectionError:
+            module.fail_json(msg="Can not connect to target.")
+        except etcd.EtcdError as e:
+            err_code, err_msg = e
+            if err_code == 100:
+                # Key not found
+                value = None
+            else:
+                module.fail_json(msg="Etcd error: %s" % err_msg)
+    elif command == 'ensure':
+
+        try:
+            set_res = e.set(key, value)
+            if set_res.newKey or set_res.prevValue != value:
+                change = True
+        except requests.ConnectionError:
+            module.fail_json(msg="Can not connect to target.")
+
+    module.exit_json(changed=change, value=value)
+
+# this is magic, see lib/ansible/module_common.py
+#<<INCLUDE_ANSIBLE_MODULE_COMMON>>
+main()

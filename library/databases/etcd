@@ -28,11 +28,10 @@ description:
    - Read and write values from etcd server.
 version_added: "0.1"
 options:
-  command:
+  state:
     description:
-      - Etcd command (either get or ensure).
+      - state (either present or absent).
     required: true
-    default: None
   target_host:
     description:
       - IP address or hostname of the server to read data from
@@ -50,7 +49,7 @@ options:
     default: null
   value:
     description:
-      - The value of the target etcd item (used with set command).
+      - The value of the target etcd item.
     required: true
     default: null
 
@@ -100,8 +99,8 @@ except ImportError:
 #
 
 def main():
-    module = AnsibleModule(argument_spec = dict(command= dict(required= True, choices= ['ensure', 'get']),
-                                                target_host=dict(required= True),
+    module = AnsibleModule(argument_spec = dict(state= dict(required= True, choices= ['present', 'absent']),
+                                                target_host=dict(required= False, default='127.0.0.1'),
                                                 target_port=dict(default= 4001),
                                                 key= dict(required= True),
                                                 value= dict(required= False, default=None),
@@ -116,13 +115,17 @@ def main():
     if not requests_found:
         module.fail_json(msg="the python requests module is required")
 
-    command = module.params['command']
+    state = module.params['state']
     target_host = module.params['target_host']
     target_port = module.params['target_port']
+    
     key = module.params['key']
     value = module.params['value']
     ssl_cert = module.params['ssl_cert']
     ssl_key = module.params['ssl_key']
+
+    if state == 'present' and value:
+	    module.fail_json(msg='Value is required with state="present".')
 
     kwargs = {'host': target_host,
             'port': target_port}
@@ -130,31 +133,38 @@ def main():
         kwargs['ssl_cert'] = ssl_cert
     if ssl_key:
         kwargs['ssl_key'] = ssl_key
-
-    e = etcd.Etcd(**kwargs)
+	#print "kwargs %s" % kwargs['host']
+    #module.fail_json(msg="kwargs %s." % kwargs)
+    e = etcd.Etcd()
     change = False
-    if command == 'get':
-        try:
-            value = e.get(key).value
-        except requests.ConnectionError:
-            module.fail_json(msg="Can not connect to target.")
-        except etcd.EtcdError as e:
-            err_code, err_msg = e
-            if err_code == 100:
-                # Key not found
-                value = None
-            else:
-                module.fail_json(msg="Etcd error: %s" % err_msg)
-    elif command == 'ensure':
-
+    prev_value = None
+    try:
+        prev_value = e.get(key).value
+    except requests.ConnectionError:
+        module.fail_json(msg="Can not connect to target.")
+    except etcd.EtcdError as err:
+        err_code, err_msg = err
+        if err_code == 100:
+            # Key doesn't exist
+            prev_value = None
+        else:
+            module.fail_json(msg="Etcd error: %s" % err_msg)
+    if state == 'present':
         try:
             set_res = e.set(key, value)
             if set_res.newKey or set_res.prevValue != value:
                 change = True
         except requests.ConnectionError:
             module.fail_json(msg="Can not connect to target.")
+    elif state == 'absent':
+        if prev_value != None:
+        	change = True
+	        try:
+	            set_res = e.delete(key)
+	        except requests.ConnectionError:
+	            module.fail_json(msg="Can not connect to target.")
 
-    module.exit_json(changed=change, value=value)
+    module.exit_json(changed=change, prev_value=prev_value)
 
 # this is magic, see lib/ansible/module_common.py
 #<<INCLUDE_ANSIBLE_MODULE_COMMON>>

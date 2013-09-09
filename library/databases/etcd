@@ -133,9 +133,9 @@ def main():
         kwargs['ssl_cert'] = ssl_cert
     if ssl_key:
         kwargs['ssl_key'] = ssl_key
-	#print "kwargs %s" % kwargs['host']
-    #module.fail_json(msg="kwargs %s." % kwargs)
-    e = etcd.Etcd()
+
+    e = etcd.Etcd(**kwargs)
+
     change = False
     prev_value = None
     try:
